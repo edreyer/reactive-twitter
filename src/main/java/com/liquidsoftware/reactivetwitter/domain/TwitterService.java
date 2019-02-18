@@ -23,7 +23,6 @@ public class TwitterService {
             statusListener = new StatusListener() {
                 @Override
                 public void onStatus(Status status) {
-                    LOG.debug(status.getText());
                     sink.next(status.getText());
                 }
                 @Override
