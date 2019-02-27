@@ -11,7 +11,6 @@ interface TweetListProps {
 
 interface TweetListState {
   tweets: Array<Tweet>;
-  isLoading: boolean;
 }
 
 class TweetList extends Component<TweetListProps, TweetListState> {
@@ -20,30 +19,23 @@ class TweetList extends Component<TweetListProps, TweetListState> {
     super(props);
 
     this.state = {
-      tweets: [],
-      isLoading: false
+      tweets: []
     };
   }
 
   async componentDidMount() {
-    //this.setState({isLoading: true});
-
     const eventSource = new EventSource('http://localhost:8080/sse/tweets');
     eventSource.onopen = (event: any) => console.log('open', event);
     eventSource.onmessage = (event: any) => {
       const tweet = JSON.parse(event.data);
-      this.state.tweets.push(tweet);
+      this.state.tweets.unshift(tweet);
       this.setState({tweets: this.state.tweets});
     };
     eventSource.onerror = (event: any) => console.log('error', event);
   }
 
   render() {
-    const {tweets, isLoading} = this.state;
-
-    if (isLoading) {
-      return <p>Loading...</p>;
-    }
+    const {tweets} = this.state;
 
     return (
       <div>

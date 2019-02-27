@@ -23,6 +23,7 @@ public class TwitterService {
     private AtomicInteger atomicInt = new AtomicInteger();
 
     public Flux<TweetDTO> startFilter(String... topics) {
+        LOG.info("Creating Flux with topics {}", topics);
         twitterFlux = Flux.create(sink -> {
             statusListener = new StatusListener() {
                 @Override
@@ -47,8 +48,7 @@ public class TwitterService {
                 .addListener(statusListener)
                 .filter(topics);
         });
-        return twitterFlux
-            .doOnNext(t -> LOG.info(t.toString()));
+        return twitterFlux;
     }
 
     public void stopFilter() {
