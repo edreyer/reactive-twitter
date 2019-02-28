@@ -10,25 +10,21 @@ import twitter4j.StatusDeletionNotice;
 import twitter4j.StatusListener;
 import twitter4j.TwitterStreamFactory;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 @Service
 public class TwitterService {
 
     private static final Logger LOG = LoggerFactory.getLogger(TwitterService.class);
 
-    private Flux<TweetDTO> twitterFlux;
+    private Flux<Tweet> twitterFlux;
     private StatusListener statusListener;
 
-    private AtomicInteger atomicInt = new AtomicInteger();
-
-    public Flux<TweetDTO> startFilter(String... topics) {
-        LOG.info("Creating Flux with topics {}", topics);
+    public Flux<Tweet> startFilter(String... topics) {
+        LOG.info("Creating Flux");
         twitterFlux = Flux.create(sink -> {
             statusListener = new StatusListener() {
                 @Override
                 public void onStatus(Status status) {
-                    sink.next(new TweetDTO(atomicInt.getAndIncrement(), status.getText()));
+                    sink.next(new Tweet(status.getText()));
                 }
                 @Override
                 public void onException(Exception ex) {

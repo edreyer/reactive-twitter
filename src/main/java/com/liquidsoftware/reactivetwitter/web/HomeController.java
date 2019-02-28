@@ -2,7 +2,8 @@ package com.liquidsoftware.reactivetwitter.web;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.liquidsoftware.reactivetwitter.domain.TweetDTO;
+import com.liquidsoftware.reactivetwitter.domain.Tweet;
+import com.liquidsoftware.reactivetwitter.domain.TweetRepository;
 import com.liquidsoftware.reactivetwitter.domain.TwitterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,12 +23,17 @@ public class HomeController {
 
     private ObjectMapper objectMapper;
     private TwitterService twitterService;
-    private Flux<TweetDTO> tweetFlux;
+    private TweetRepository tweetRepository;
+    private Flux<Tweet> tweetFlux;
 
     @Autowired
-    public HomeController(ObjectMapper objectMapper, TwitterService twitterService) {
+    public HomeController(
+        ObjectMapper objectMapper,
+        TweetRepository tweetRepository,
+        TwitterService twitterService) {
         this.objectMapper = objectMapper;
         this.twitterService = twitterService;
+        this.tweetRepository = tweetRepository;
         this.tweetFlux = twitterService
             .startFilter("trump")
             .share();
@@ -39,6 +45,8 @@ public class HomeController {
         LOG.info("GET tweets");
         return tweetFlux
             .delayElements(Duration.ofSeconds(1))
+            .flatMap(tweetRepository::save)
+            .log()
             .map(tweet -> {
                 try {
                     return objectMapper.writeValueAsString(tweet) + "\n\n";
