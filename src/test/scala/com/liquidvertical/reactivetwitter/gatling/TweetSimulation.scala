@@ -3,7 +3,6 @@ package com.liquidvertical.reactivetwitter.gatling
 import io.gatling.core.Predef._
 import io.gatling.http.Predef._
 import io.gatling.http.check.sse.SseMessageCheck
-import scala.util.parsing.json._
 
 import scala.concurrent.duration._
 
@@ -22,7 +21,7 @@ class TweetSimulation extends Simulation {
   val maxMessages = 20
 
   // check
-  val tweetChecks: Array[SseMessageCheck] = (1 to maxMessages).map(_ => {
+  val tweetChecks: Array[SseMessageCheck] = (0 until maxMessages).map(_ => {
     sse.checkMessage("check tweet")
       .check(jsonPath("""$..data""").saveAs("tweet"))
   }).toArray
@@ -34,7 +33,6 @@ class TweetSimulation extends Simulation {
         .connect("/sse/tweets")
         .await(maxWait)(tweetChecks:_*)
     )
-    .pause(maxWait + 5)
     .exec(sse("Close").close())
 
   setUp(
