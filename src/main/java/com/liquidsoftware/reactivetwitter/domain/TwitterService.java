@@ -2,21 +2,34 @@ package com.liquidsoftware.reactivetwitter.domain;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import twitter4j.StallWarning;
 import twitter4j.Status;
 import twitter4j.StatusDeletionNotice;
 import twitter4j.StatusListener;
-import twitter4j.TwitterStreamFactory;
+import twitter4j.TwitterStream;
 
 @Service
 public class TwitterService {
 
     private static final Logger LOG = LoggerFactory.getLogger(TwitterService.class);
 
+    private TwitterStream twitterStream;
+    private TweetRepository tweetRepository;
+
     private Flux<Tweet> twitterFlux;
     private StatusListener statusListener;
+
+    @Autowired
+    public TwitterService(
+        TwitterStream twitterStream,
+        TweetRepository tweetRepository) {
+        this.twitterStream = twitterStream;
+        this.tweetRepository = tweetRepository;
+    }
 
     public Flux<Tweet> startFilter(String... topics) {
         LOG.info("Creating Flux");
@@ -39,17 +52,29 @@ public class TwitterService {
                 @Override
                 public void onStallWarning(StallWarning warning) { }
             };
-            TwitterStreamFactory
-                .getSingleton()
-                .addListener(statusListener)
+            twitterStream.addListener(statusListener)
                 .filter(topics);
         });
         return twitterFlux;
     }
 
+    public Mono<Tweet> saveTweet(Tweet tweet) {
+        return tweetRepository
+            .save(tweet)
+            .onErrorResume((ex) -> {
+                switch (ex.getClass().getSimpleName()) {
+                    case "DuplicateKeyException":
+                        return tweetRepository.findByHash(tweet.getHash());
+                    default:
+                        LOG.error("Failed to save tweet: {}", ex, tweet);
+                }
+                return null;
+            });
+    }
+
     public void stopFilter() {
-        TwitterStreamFactory.getSingleton().removeListener(statusListener);
-        TwitterStreamFactory.getSingleton().shutdown();
+        twitterStream.removeListener(statusListener);
+        twitterStream.shutdown();
     }
 
 

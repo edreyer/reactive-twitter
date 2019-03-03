@@ -24,4 +24,4 @@
 /.nb-gradle/
 /build/
 
-/src/main/resources/twitter4j-real.properties
+/src/main/resources/application-twitter.properties

@@ -42,7 +42,7 @@ class TweetList extends Component<TweetListProps, TweetListState> {
         <h2>Tweet List</h2>
         {tweets.map((tweet: Tweet) =>
           <div key={tweet.id} className="tweet">
-            {tweet.text}<br/>
+            <strong>{tweet.id}:</strong> {tweet.text}<br/>
           </div>
         )}
       </div>
