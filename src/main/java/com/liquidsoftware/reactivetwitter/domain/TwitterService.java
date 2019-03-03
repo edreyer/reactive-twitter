@@ -1,5 +1,8 @@
 package com.liquidsoftware.reactivetwitter.domain;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +15,8 @@ import twitter4j.StatusDeletionNotice;
 import twitter4j.StatusListener;
 import twitter4j.TwitterStream;
 
+import javax.annotation.PostConstruct;
+
 @Service
 public class TwitterService {
 
@@ -22,6 +27,7 @@ public class TwitterService {
 
     private Flux<Tweet> twitterFlux;
     private StatusListener statusListener;
+    LoadingCache<String, Mono<Tweet>> tweetLRUCache;
 
     @Autowired
     public TwitterService(
@@ -29,6 +35,19 @@ public class TwitterService {
         TweetRepository tweetRepository) {
         this.twitterStream = twitterStream;
         this.tweetRepository = tweetRepository;
+    }
+
+    @PostConstruct
+    public void init() {
+        // Setup cache
+        CacheLoader<String, Mono<Tweet>> loader = new CacheLoader<>() {
+            @Override
+            public Mono<Tweet> load(String hash) {
+                LOG.info("Loading from DB.  hash={}", hash);
+                return tweetRepository.findByHash(hash);
+            }
+        };
+        tweetLRUCache = CacheBuilder.newBuilder().maximumSize(500).build(loader);
     }
 
     public Flux<Tweet> startFilter(String... topics) {
@@ -64,11 +83,11 @@ public class TwitterService {
             .onErrorResume((ex) -> {
                 switch (ex.getClass().getSimpleName()) {
                     case "DuplicateKeyException":
-                        return tweetRepository.findByHash(tweet.getHash());
+                        return tweetLRUCache.getUnchecked(tweet.getHash());
                     default:
                         LOG.error("Failed to save tweet: {}", ex, tweet);
                 }
-                return null;
+                return Mono.empty();
             });
     }
 
