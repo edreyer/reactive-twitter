@@ -1,21 +1,21 @@
 package com.liquidsoftware.reactivetwitter.domain;
 
-import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.core.publisher.Mono;
-import twitter4j.StallWarning;
 import twitter4j.Status;
-import twitter4j.StatusDeletionNotice;
+import twitter4j.StatusAdapter;
 import twitter4j.StatusListener;
 import twitter4j.TwitterStream;
 
 import javax.annotation.PostConstruct;
+import java.util.function.Consumer;
 
 @Service
 public class TwitterService {
@@ -27,7 +27,6 @@ public class TwitterService {
 
     private Flux<Tweet> twitterFlux;
     private StatusListener statusListener;
-    LoadingCache<String, Mono<Tweet>> tweetLRUCache;
 
     @Autowired
     public TwitterService(
@@ -40,55 +39,51 @@ public class TwitterService {
     @PostConstruct
     public void init() {
         // Setup cache
-        CacheLoader<String, Mono<Tweet>> loader = new CacheLoader<>() {
+        CacheLoader<Long, Mono<Tweet>> loader = new CacheLoader<>() {
             @Override
-            public Mono<Tweet> load(String hash) {
-                LOG.info("Loading from DB.  hash={}", hash);
-                return tweetRepository.findByHash(hash);
+            public Mono<Tweet> load(Long tweetId) {
+                return tweetRepository.findByTweetId(tweetId)
+                    .doOnNext(t -> LOG.info("LOADED: {}", t))
+                    .or(Mono.empty());
             }
         };
-        tweetLRUCache = CacheBuilder.newBuilder().maximumSize(500).build(loader);
     }
 
     public Flux<Tweet> startFilter(String... topics) {
         LOG.info("Creating Flux");
-        twitterFlux = Flux.create(sink -> {
-            statusListener = new StatusListener() {
+
+        Consumer<FluxSink<Tweet>> fluxSink = sink -> {
+            statusListener = new StatusAdapter() {
                 @Override
                 public void onStatus(Status status) {
-                    sink.next(new Tweet(status.getText()));
+                    sink.next(new Tweet(status.getId(), status.getText(), status.isRetweet()));
                 }
                 @Override
                 public void onException(Exception ex) {
                     sink.error(ex);
                 }
-                @Override
-                public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) { }
-                @Override
-                public void onTrackLimitationNotice(int numberOfLimitedStatuses) { }
-                @Override
-                public void onScrubGeo(long userId, long upToStatusId) { }
-                @Override
-                public void onStallWarning(StallWarning warning) { }
             };
             twitterStream.addListener(statusListener)
                 .filter(topics);
-        });
+        };
+
+        twitterFlux = Flux.create(fluxSink, OverflowStrategy.DROP)
+            .filter(tweet -> !tweet.isRetweet());
         return twitterFlux;
     }
 
     public Mono<Tweet> saveTweet(Tweet tweet) {
-        return tweetRepository
-            .save(tweet)
-            .onErrorResume((ex) -> {
-                switch (ex.getClass().getSimpleName()) {
-                    case "DuplicateKeyException":
-                        return tweetLRUCache.getUnchecked(tweet.getHash());
-                    default:
-                        LOG.error("Failed to save tweet: {}", ex, tweet);
-                }
-                return Mono.empty();
-            });
+
+        return tweetRepository.findByTweetId(tweet.getTweetId())
+            .doOnNext(t -> LOG.info("FOUND {}", t.getTweetId()))
+            .switchIfEmpty(
+                tweetRepository.save(tweet)
+                .doOnNext(t -> LOG.info("SAVED {}", t.getTweetId()))
+                .onErrorResume(ex -> tweetRepository
+                    .findByTweetId(tweet.getTweetId())
+                    .doOnEach(t -> LOG.info("FOUND 2 {}", t)))
+            );
+
     }
 
     public void stopFilter() {

@@ -16,8 +16,8 @@ class TweetSimulation extends Simulation {
     .acceptEncodingHeader("gzip, deflate")
     .userAgentHeader("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0")
 
-  val maxUsers = 100
-  val maxWait = 30
+  val maxUsers = 5
+  val maxWait = 5
   val maxMessages = 20
 
   // check

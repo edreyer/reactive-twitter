@@ -3,6 +3,7 @@ import './TweetList.css';
 
 interface Tweet {
   id: number;
+  tweetId: number;
   text: string;
 }
 
@@ -41,8 +42,8 @@ class TweetList extends Component<TweetListProps, TweetListState> {
       <div>
         <h2>Tweet List</h2>
         {tweets.map((tweet: Tweet) =>
-          <div key={tweet.id} className="tweet">
-            <strong>{tweet.id}:</strong> {tweet.text}<br/>
+          <div key={tweet.tweetId} className="tweet">
+            <strong>{tweet.tweetId}:</strong> {tweet.text}<br/>
           </div>
         )}
       </div>

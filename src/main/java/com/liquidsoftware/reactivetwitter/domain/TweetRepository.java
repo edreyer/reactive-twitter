@@ -8,7 +8,7 @@ import reactor.core.publisher.Mono;
 @Repository
 public interface TweetRepository extends R2dbcRepository<Tweet, Long> {
 
-    @Query("select * from tweet where hash = $1 ")
-    Mono<Tweet> findByHash(String hash);
+    @Query("select * from tweet where tweet_id = $1")
+    Mono<Tweet> findByTweetId(Long tweetId);
 
 }

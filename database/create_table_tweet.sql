@@ -1,14 +1,15 @@
 create table tweet
 (
-  id serial not null
+  id bigserial not null
     constraint tweet_pk
-    primary key,
-  hash varchar(128) not null,
-  text text not null
+      primary key,
+  text text not null,
+  retweet boolean default false not null,
+  tweetid bigint not null
 );
 
 alter table tweet owner to postgres;
 
-create unique index tweet_hash_uindex
-  on tweet (hash);
+create unique index tweet_tweetid_uindex
+  on tweet (tweetid);
 

@@ -1,9 +1,9 @@
 package com.liquidsoftware.reactivetwitter.domain;
 
-import com.liquidsoftware.reactivetwitter.utils.CryptoUtils;
 import lombok.Data;
 import lombok.NonNull;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 @Table("tweet")
@@ -12,14 +12,15 @@ public class Tweet {
 
     @Id
     private Long id = null;
-    @NonNull
-    private String hash;
-    @NonNull
+    private Long tweetId;
     private String text;
+    @Column("retweet")
+    private boolean retweet;
 
-    public Tweet(@NonNull String text) {
+    public Tweet(long tweetId, @NonNull String text, boolean retweet) {
+        this.tweetId = tweetId;
         this.text = text;
-        this.hash = CryptoUtils.encode(text);
+        this.retweet = retweet;
     }
 
 }

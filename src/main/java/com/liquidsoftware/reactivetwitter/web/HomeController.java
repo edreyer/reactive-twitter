@@ -36,14 +36,9 @@ public class HomeController {
     public Flux<Tweet> tweets() {
         LOG.info("GET tweets");
         return tweetFlux
-            .filter(tweet -> !tweet.getText().startsWith("RT "))// filter out retweets
             .delayElements(Duration.ofSeconds(1))
             .flatMap(twitterService::saveTweet)
-            .filter(Objects::nonNull)
-            .doOnEach(tweetSignal -> {
-                LOG.info("Sending tweetId: {}", tweetSignal.get().getId());
-            });
-
+            .filter(Objects::nonNull);
     }
 
     @GetMapping("/kill")
