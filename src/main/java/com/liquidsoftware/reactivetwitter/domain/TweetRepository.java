@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Mono;
 
 @Repository
-public interface TweetRepository extends R2dbcRepository<Tweet, Long> {
+public interface TweetRepository extends R2dbcRepository<Tweet, Long>, MyTweetRepository {
 
     @Query("select * from tweet where tweet_id = $1")
     Mono<Tweet> findByTweetId(Long tweetId);

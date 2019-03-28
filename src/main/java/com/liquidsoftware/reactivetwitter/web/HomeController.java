@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
@@ -20,28 +21,24 @@ public class HomeController {
     private static final Logger LOG = LoggerFactory.getLogger(HomeController.class);
 
     private TwitterService twitterService;
-    private Flux<Tweet> tweetFlux;
 
     @Autowired
     public HomeController(
         TwitterService twitterService) {
         this.twitterService = twitterService;
-        this.tweetFlux = twitterService
-            .startFilter("trump")
-            .share();
     }
 
     @GetMapping(path = "/sse/tweets", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @CrossOrigin(origins = "http://localhost:3000")
-    public Flux<Tweet> tweets() {
-        LOG.info("GET tweets");
-        return tweetFlux
-            .delayElements(Duration.ofSeconds(1))
+    public Flux<Tweet> tweets(@RequestParam String topic) {
+        LOG.info("GET tweets: {}", topic);
+        return twitterService.startFilter(topic)
+            .delayElements(Duration.ofMillis(200))
             .flatMap(twitterService::saveTweet)
             .filter(Objects::nonNull);
     }
 
-    @GetMapping("/kill")
+    @GetMapping("/sse/kill")
     public void killStream() {
         twitterService.stopFilter();
     }

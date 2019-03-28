@@ -16,8 +16,8 @@ class TweetSimulation extends Simulation {
     .acceptEncodingHeader("gzip, deflate")
     .userAgentHeader("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0")
 
-  val maxUsers = 5
-  val maxWait = 5
+  val maxUsers = 2
+  val maxWait = 1
   val maxMessages = 20
 
   // check
@@ -30,10 +30,15 @@ class TweetSimulation extends Simulation {
   val tweetClient = scenario("Tweet Client")
     .exec(
       sse("Get Tweets")
-        .connect("/sse/tweets")
+        .connect("/sse/tweets?topic=trump")
         .await(maxWait)(tweetChecks:_*)
     )
     .exec(sse("Close").close())
+    .exec(
+      http("Kill Tweets")
+        .get("/sse/kill")
+        .check(status.is(200))
+    )
 
   setUp(
     tweetClient
