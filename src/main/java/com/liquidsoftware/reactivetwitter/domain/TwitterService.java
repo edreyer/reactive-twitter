@@ -80,7 +80,8 @@ public class TwitterService {
     @Transactional
     public Mono<Tweet> saveTweet(Tweet tweet) {
         return findByTwitterId(tweet.getTweetId())
-            .switchIfEmpty(tweetRepository.save(tweet));
+            .switchIfEmpty(tweetRepository.save(tweet))
+            .onErrorResume(e -> findByTwitterId(tweet.getTweetId()));
     }
 
 
