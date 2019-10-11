@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@types/jest": "^24.0.6",
-    "@types/react": "^16.8.4",
-    "@types/react-dom": "^16.8.2",
-    "react": "^16.8.2",
-    "react-dom": "^16.8.2",
-    "react-scripts": "2.1.5",
-    "rxjs": "^6.3.3",
-    "typescript": "^3.3.3333"
+    "@types/jest": "^24.0.18",
+    "@types/react": "^16.9.5",
+    "@types/react-dom": "^16.9.1",
+    "react": "^16.10.2",
+    "react-dom": "^16.10.2",
+    "react-scripts": "^3.2.0",
+    "rxjs": "^6.5.3",
+    "typescript": "^3.6.4"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -29,6 +29,6 @@
   ],
   "proxy": "http://localhost:8080",
   "devDependencies": {
-    "@types/node": "^11.9.5"
+    "@types/node": "^12.7.2"
   }
 }
