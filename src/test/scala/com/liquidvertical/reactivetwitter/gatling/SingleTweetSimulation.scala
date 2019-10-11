@@ -16,7 +16,7 @@ class SingleTweetSimulation extends Simulation {
     .acceptEncodingHeader("gzip, deflate")
     .userAgentHeader("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0")
 
-  val maxUsers = 100
+  val maxUsers = 150
   val duration = 20
   val maxMessages = 1
 
@@ -29,7 +29,7 @@ class SingleTweetSimulation extends Simulation {
   val tweetClient = scenario("Tweet Client")
     .exec(
       http("Get Tweets")
-        .get("/get-tweet-reactive")
+        .get("/get-tweet")
         .check(jsonPath("""$..tweetId""").saveAs("tweet"))
     )
 //    .exec(sse("Close").close())
