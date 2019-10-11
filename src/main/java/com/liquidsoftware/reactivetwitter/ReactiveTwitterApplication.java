@@ -7,6 +7,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class ReactiveTwitterApplication {
 
     public static void main(String[] args) {
+//        System.setProperty("reactor.netty.ioWorkerCount", "500");
+//        System.setProperty("reactor.netty.maxConnections", "500");
+
         SpringApplication.run(ReactiveTwitterApplication.class, args);
 
     }

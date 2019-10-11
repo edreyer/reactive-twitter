@@ -108,9 +108,8 @@
                 <version>3.0.2</version>
                 <configuration>
                     <includes>
-                        <simulationClass>com.liquidvertical.reactivetwitter.gatling.TweetSimulation</simulationClass>
+                        <simulationClass>com.liquidvertical.reactivetwitter.gatling.SingleTweetSimulation</simulationClass>
                         <runDescription>Reactive Twitter Load Test</runDescription>
-
                     </includes>
                 </configuration>
             </plugin>

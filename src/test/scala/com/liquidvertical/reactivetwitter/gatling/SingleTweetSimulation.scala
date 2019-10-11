@@ -6,7 +6,7 @@ import io.gatling.http.check.sse.SseMessageCheck
 
 import scala.concurrent.duration._
 
-class TweetSimulation extends Simulation {
+class SingleTweetSimulation extends Simulation {
 
   val httpProtocol = http
     .baseUrl("http://localhost:8080") // Here is the root for all relative URLs
@@ -16,33 +16,32 @@ class TweetSimulation extends Simulation {
     .acceptEncodingHeader("gzip, deflate")
     .userAgentHeader("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0")
 
-  val maxUsers = 2
-  val maxWait = 1
-  val maxMessages = 2
+  val maxUsers = 100
+  val duration = 20
+  val maxMessages = 1
 
   // check
-  val tweetChecks: Array[SseMessageCheck] = (0 until maxMessages).map(_ => {
-    sse.checkMessage("check tweet")
-      .check(jsonPath("""$..data""").saveAs("tweet"))
-  }).toArray
-
+//  val tweetChecks: Array[SseMessageCheck] = (0 until maxMessages).map(_ => {
+//    sse.checkMessage("check tweet")
+//      .check(jsonPath("""$..data""").saveAs("tweet"))
+//  }).toArray
 
   val tweetClient = scenario("Tweet Client")
     .exec(
-      sse("Get Tweets")
-        .connect("/sse/tweets?topic=trump")
-        .await(maxWait)(tweetChecks:_*)
+      http("Get Tweets")
+        .get("/get-tweet-reactive")
+        .check(jsonPath("""$..tweetId""").saveAs("tweet"))
     )
-    .exec(sse("Close").close())
-    .exec(
-      http("Kill Tweets")
-        .get("/sse/kill")
-        .check(status.is(200))
-    )
+//    .exec(sse("Close").close())
+//    .exec(
+//      http("Kill Tweets")
+//        .get("/sse/kill")
+//        .check(status.is(200))
+//    )
 
   setUp(
     tweetClient
-      .inject(constantConcurrentUsers(maxUsers) during (maxWait seconds))
+      .inject(constantConcurrentUsers(maxUsers) during (duration seconds))
       .protocols(httpProtocol)
   )
 

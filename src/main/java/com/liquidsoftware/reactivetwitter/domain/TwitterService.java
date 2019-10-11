@@ -10,10 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.vavr.control.Try;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import twitter4j.Status;
 import twitter4j.StatusAdapter;
 import twitter4j.StatusListener;
@@ -42,35 +44,54 @@ public class TwitterService {
     public void init() { }
 
     public Flux<Tweet> startFilter(String topic) {
-
-        Consumer<FluxSink<Tweet>> fluxSink = sink -> {
-            statusListener = new StatusAdapter() {
-                @Override
-                public void onStatus(Status status) {
-                    Tweet t = new Tweet(status.getId(), status.getText(), status.isRetweet());
-                    //LOG.info("onStatus: {}", t.getTweetId());
-                    sink.next(t);
-                }
-                @Override
-                public void onException(Exception ex) {
-                    sink.error(ex);
-                }
-            };
-            twitterStream.addListener(statusListener)
-                .filter(topic);
-        };
-
         if (twitterFlux == null) {
             synchronized (this) {
                 if (twitterFlux == null) {
                     LOG.info("Creating Flux");
+
+                    Consumer<FluxSink<Tweet>> fluxSink = sink -> {
+                        statusListener = new StatusAdapter() {
+                            @Override
+                            public void onStatus(Status status) {
+                                Tweet t = new Tweet(status.getId(), status.getText(), status.isRetweet());
+                                //LOG.info("onStatus: {}", t.getTweetId());
+                                sink.next(t);
+                            }
+                            @Override
+                            public void onException(Exception ex) {
+                                sink.error(ex);
+                            }
+                        };
+
+                        twitterStream.clearListeners().addListener(statusListener)
+                            .filter(topic);
+
+                        sink.onDispose(() -> twitterStream.clearListeners());
+                    };
+
                     twitterFlux = Flux.create(fluxSink, OverflowStrategy.DROP)
                         .filter(tweet -> !tweet.isRetweet())
                         .share();
                 }
             }
         }
+
+        // Add a subscriber to keep the flux open
+        twitterFlux.
+            subscribeOn(Schedulers.elastic()).
+            subscribe((tweet) -> Try.run(() -> Thread.sleep(1)));
+
         return twitterFlux;
+    }
+
+    public Mono<Tweet> getTweetReactive() {
+        return twitterFlux
+            .next();
+    }
+
+    public Tweet getTweet() {
+        return getTweetReactive()
+            .block();
     }
 
     public Mono<Tweet> findByTwitterId(Long twitterId) {
